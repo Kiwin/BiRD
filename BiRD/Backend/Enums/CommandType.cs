@@ -3,7 +3,9 @@
     public enum CommandType
     {
         MovePointer,
-        UpdatePointerState,
-        MovePointerPercentage
+        MouseAction,
+        MovePointerPercentage,
+        KeyboardInputCommand,
+        ConnectionRequest
     }
 }

@@ -20,7 +20,12 @@ namespace BifrostRemoteDesktop.Common.Network
         public event EventHandler NoReceiverFound;
         public event EventHandler ConnectionEstablished;
 
-        public bool SendCommand(CommandType type, RemoteControlCommandArgs commandArgs)
+        ~CommandTransmitter()
+        {
+            Disconnect();
+        }
+
+        public bool SendCommand(CommandType type, IRemoteControlCommandArgs commandArgs)
         {
             string[] packageParts = new string[] {
                 type.ToString(),
@@ -72,7 +77,7 @@ namespace BifrostRemoteDesktop.Common.Network
             {
                 _tcp.Connect(remoteHostname, port: TransmissionContext.INPUT_TCP_PORT);
             }
-            catch (SocketException)
+            catch (SocketException ex)
             {
                 Debug.WriteLine("No receiver available.");
                 NoReceiverFound?.Invoke(this, EventArgs.Empty);

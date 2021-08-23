@@ -2,7 +2,7 @@
 using BifrostRemoteDesktop.Common.Models.Commands;
 using BifrostRemoteDesktop.Common.SystemControllers;
 using BifrostRemoteDesktop.WPF.Backend.Models.Commands;
-using BifrostRemoteDesktop.WPF.Backend.Models.Commands.MovePointerPercentageCommand;
+using BiRD.Backend.Models.Commands;
 using System;
 
 namespace BifrostRemoteDesktop.Common.Factories
@@ -18,13 +18,21 @@ namespace BifrostRemoteDesktop.Common.Factories
                     {
                         return new MovePointerCommand(systemController, (MovePointerCommandArgs)commandArgs);
                     }
-                case CommandType.UpdatePointerState:
+                case CommandType.MouseAction:
                     {
-                        return new PointerUpdateStateCommand(systemController, (PointerUpdateStateCommandArgs)commandArgs);
+                        return new MouseActionCommand(systemController, (MouseActionCommandArgs)commandArgs);
                     }
                 case CommandType.MovePointerPercentage:
                     {
                         return new MovePointerPercentCommand(systemController, (MovePointerPercentageCommandArgs)commandArgs);
+                    }
+                case CommandType.KeyboardInputCommand:
+                    {
+                        return new KeyboardInputCommand(systemController, (KeyboardInputCommandArgs)commandArgs);
+                    }
+                case CommandType.ConnectionRequest:
+                    {
+                        return new ConnectionRequestCommand(systemController, (ConnectionRequestCommandArgs)commandArgs);
                     }
                 default:
                     {

@@ -1,8 +1,9 @@
-﻿using BifrostRemoteDesktop.Common.SystemControllers;
+﻿using BifrostRemoteDesktop.Common.Network;
+using BifrostRemoteDesktop.Common.SystemControllers;
 
 namespace BifrostRemoteDesktop.Common.Models.Commands
 {
-    public abstract class RemoteControlCommand<AssociatedArgumentType> : ICommand where AssociatedArgumentType : RemoteControlCommandArgs
+    public abstract class RemoteControlCommand<AssociatedArgumentType> : IRemoteControlCommand<AssociatedArgumentType> where AssociatedArgumentType : IRemoteControlCommandArgs
     {
         protected ISystemController SystemController { get; }
         protected AssociatedArgumentType Args { get; }
@@ -14,5 +15,6 @@ namespace BifrostRemoteDesktop.Common.Models.Commands
         }
 
         public abstract void Execute();
+        public virtual void Execute(object obj) { }
     }
 }

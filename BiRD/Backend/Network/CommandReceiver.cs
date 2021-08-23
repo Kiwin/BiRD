@@ -2,6 +2,8 @@
 using BifrostRemoteDesktop.Common.Factories;
 using BifrostRemoteDesktop.Common.Models.Commands;
 using BifrostRemoteDesktop.Common.SystemControllers;
+using BiRD;
+using BiRD.Backend.Models.Commands;
 using Newtonsoft.Json;
 using System;
 using System.Net;
@@ -14,13 +16,26 @@ namespace BifrostRemoteDesktop.Common.Network
 
     public class CommandReceiver
     {
-        private ISystemController _systemController;
+        private readonly ISystemController _systemController;
         private Thread thread;
+        private TcpListener tcpListener;
+        public ClientWindow client;
 
 
         public CommandReceiver(ISystemController systemController)
         {
             _systemController = systemController;
+        }
+
+        ~CommandReceiver()
+        {
+            Stop();
+            tcpListener.Stop();
+        }
+
+        public void ParseWindow(ClientWindow cl)
+        {
+            client = cl;
         }
 
         public void Start()
@@ -29,8 +44,13 @@ namespace BifrostRemoteDesktop.Common.Network
             {
                 thread = new Thread(Listen);
             }
+            if (tcpListener == null)
+            {
+                tcpListener = new TcpListener(IPAddress.Any, TransmissionContext.INPUT_TCP_PORT);
+            }
             if (!thread.IsAlive)
             {
+                tcpListener.Start();
                 thread.Start(this);
             }
         }
@@ -39,24 +59,22 @@ namespace BifrostRemoteDesktop.Common.Network
         {
             if (thread != null && thread.IsAlive)
             {
-                thread.Join();
+                tcpListener.Stop();
+                thread.Interrupt();
             }
         }
 
-        private static void Listen(object obj)
+        private void Listen(object obj)
         {
             if (obj is CommandReceiver commandReceiver)
             {
                 //IPAddress localhost = IPAddress.Parse("127.0.0.1");
-                TcpListener listener = new TcpListener(IPAddress.Any, TransmissionContext.INPUT_TCP_PORT);
-
-                listener.Start();
 
                 byte[] buffer = new byte[TransmissionContext.RECEIVER_BUFFER_SIZE];
                 string data = string.Empty;
                 while (true)
                 {
-                    TcpClient receiver = listener.AcceptTcpClient();
+                    TcpClient receiver = commandReceiver.tcpListener.AcceptTcpClient();
                     NetworkStream stream = receiver.GetStream();
                     int i;
 
@@ -66,10 +84,13 @@ namespace BifrostRemoteDesktop.Common.Network
                         while (TryFindAndRemoveNextPackage(ref data, out string package))
                         {
                             ICommand command = ParseCommandFromPackage(
-                                commandReceiver, package);
-                            command.Execute();
+                                commandReceiver._systemController, package);
+                            // TODO: This is a hack, maby make it right later?
+                            if (command is ConnectionRequestCommand)
+                                command.Execute(client);
+                            else
+                                command.Execute();
                         }
-
                     }
 
                     receiver.Close();
@@ -107,7 +128,7 @@ namespace BifrostRemoteDesktop.Common.Network
             return true;
         }
 
-        public static ICommand ParseCommandFromPackage(CommandReceiver commandReceiver, string package)
+        public static ICommand ParseCommandFromPackage(ISystemController systemController, string package)
         {
             string[] parts = package.Split(TransmissionContext.TEXT_SEGMENTATION_CHAR);
 
@@ -120,7 +141,7 @@ namespace BifrostRemoteDesktop.Common.Network
             {
                 TypeNameHandling = TypeNameHandling.All
             });
-            ICommand command = CommandFactory.CreateCommand(commandType, commandArgs, commandReceiver._systemController);
+            ICommand command = CommandFactory.CreateCommand(commandType, commandArgs, systemController);
             return command;
         }
     }
